@@ -5,6 +5,8 @@ use axum::{
     routing::{get, post},
     AddExtensionLayer, Router,
 };
+use hyper::client::{connect::dns::GaiResolver, HttpConnector};
+use hyper_rustls::HttpsConnector;
 // use dotenv::dotenv;
 use slack::{handle_slack_commands_api, handle_slack_events_api, handle_slack_interaction_api};
 
@@ -58,14 +60,29 @@ async fn main() {
         .unwrap();
 }
 
-/// until i can get the Session itself working & stored in an arc, will have to rebuild the session every time
+// Doesnt work anymore:
+// pub struct SlackStateWorkaround {
+//     slack_client: SlackClient<SlackClientHyperConnector>,
+//     bot_token: SlackApiToken,
+// }
+
+// impl SlackStateWorkaround {
+//     fn open_session(&self) -> SlackClientSession<SlackClientHyperConnector> {
+//         self.slack_client.open_session(&self.bot_token)
+//     }
+// }
+
 pub struct SlackStateWorkaround {
-    slack_client: SlackClient<SlackClientHyperConnector>,
+    slack_client:
+        SlackClient<SlackClientHyperConnector<HttpsConnector<HttpConnector<GaiResolver>>>>,
     bot_token: SlackApiToken,
 }
 
 impl SlackStateWorkaround {
-    fn open_session(&self) -> SlackClientSession<SlackClientHyperConnector> {
+    fn open_session(
+        &self,
+    ) -> SlackClientSession<SlackClientHyperConnector<HttpsConnector<HttpConnector<GaiResolver>>>>
+    {
         self.slack_client.open_session(&self.bot_token)
     }
 }
