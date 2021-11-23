@@ -5,14 +5,15 @@ use axum::{
     routing::{get, post},
     AddExtensionLayer, Router,
 };
-use hyper::client::{connect::dns::GaiResolver, HttpConnector};
-use hyper_rustls::HttpsConnector;
+
 // use dotenv::dotenv;
 use slack::{handle_slack_commands_api, handle_slack_events_api, handle_slack_interaction_api};
 
 use serde_json::{from_value, json};
 use slack_morphism::{SlackApiToken, SlackClient, SlackClientSession};
-use slack_morphism_hyper::SlackClientHyperConnector;
+use slack_morphism_hyper::{
+    SlackClientHyperConnector, SlackClientHyperHttpsConnector, SlackHyperClient,
+};
 use std::env;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -29,13 +30,11 @@ async fn main() {
             .unwrap_or_else(|_| "<no_token_provided>".to_string())
             .into(),
     );
-    let slack_client = SlackClient::new(SlackClientHyperConnector::new());
 
-    // let slack_workaround = Arc::new(SlackStateWorkaround {
-    //     bot_token: slack_bot_token,
-    //     slack_client,
-    // });
-    let slack_shared_session = Arc::new(slack_client.open_session(&slack_bot_token));
+    let slack_state = Arc::new(SlackStateWorkaround {
+        bot_token: slack_bot_token,
+        slack_client: SlackClient::new(SlackClientHyperConnector::new()),
+    });
 
     // consolidate slack routes into a separate Router so we can apply slack verification middleware
     let slack_api_router = Router::new()
@@ -47,8 +46,7 @@ async fn main() {
         .nest("/slack", slack_api_router)
         .route("/", get(|| async { "Hello, World!" }))
         .layer(TraceLayer::new_for_http())
-        // .layer(AddExtensionLayer::new(slack_workaround));
-        .layer(AddExtensionLayer::new(slack_shared_session));
+        .layer(AddExtensionLayer::new(slack_state));
 
     let host_address = env::var("HOST_ADDRESS").unwrap_or_else(|_| "0.0.0.0:3000".to_string());
     tracing::debug!("listening on {}", &host_address);
@@ -60,29 +58,14 @@ async fn main() {
         .unwrap();
 }
 
-// Doesnt work anymore:
-// pub struct SlackStateWorkaround {
-//     slack_client: SlackClient<SlackClientHyperConnector>,
-//     bot_token: SlackApiToken,
-// }
-
-// impl SlackStateWorkaround {
-//     fn open_session(&self) -> SlackClientSession<SlackClientHyperConnector> {
-//         self.slack_client.open_session(&self.bot_token)
-//     }
-// }
-
+/// until i can get the Session itself working & stored in an arc, will have to rebuild the session every time
 pub struct SlackStateWorkaround {
-    slack_client:
-        SlackClient<SlackClientHyperConnector<HttpsConnector<HttpConnector<GaiResolver>>>>,
+    pub slack_client: SlackHyperClient,
     bot_token: SlackApiToken,
 }
 
 impl SlackStateWorkaround {
-    fn open_session(
-        &self,
-    ) -> SlackClientSession<SlackClientHyperConnector<HttpsConnector<HttpConnector<GaiResolver>>>>
-    {
+    pub fn open_session(&self) -> SlackClientSession<SlackClientHyperHttpsConnector> {
         self.slack_client.open_session(&self.bot_token)
     }
 }

@@ -16,7 +16,3 @@ serde_json = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version="0.3", features = ["env-filter"] }
 tower-http = {version = "0.1", features=["trace"]}
-
-# required for slack-morphism types
-hyper-rustls = "0.23"
-hyper = "0.14"

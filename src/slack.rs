@@ -17,7 +17,7 @@ use tracing::{debug, error};
 
 pub async fn handle_slack_events_api(
     // Extension(cached_config_state): Extension<Arc<RwLock<CachedConfigurations>>>,
-    // Extension(slack_state): Extension<Arc<StupidSlackStateWorkaround>>,
+    // Extension(slack_state): Extension<Arc<SlackState>>,
     Json(payload): Json<SlackPushEvent>,
 ) -> impl IntoResponse {
     match payload {
@@ -38,6 +38,7 @@ pub async fn handle_slack_events_api(
 /// slash commands
 pub async fn handle_slack_commands_api(
     // Extension(cached_config_state): Extension<Arc<RwLock<CachedConfigurations>>>,
+    // Extension(slack_state): Extension<Arc<SlackState>>,
     Form(payload): Form<SlackCommandEvent>,
 ) -> impl IntoResponse {
     debug!("SlackCommandEvent");
@@ -45,6 +46,7 @@ pub async fn handle_slack_commands_api(
 }
 
 pub async fn handle_slack_interaction_api(
+    // Extension(slack_state): Extension<Arc<SlackState>>,
     Json(payload): Json<SlackInteractionEvent>,
 ) -> impl IntoResponse {
     debug!("Interaction event");
