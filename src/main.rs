@@ -1,4 +1,5 @@
 mod slack;
+mod verification;
 
 use axum::{
     routing::{get, post},

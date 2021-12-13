@@ -1,18 +1,8 @@
-use std::sync::Arc;
-
 use axum::{extract::Extension, extract::Form, http::StatusCode, response::IntoResponse, Json};
+use std::sync::Arc;
 // use regex::Regex;
-use serde::{Deserialize, Serialize};
-use serde_json::{to_value, Value};
-use slack_morphism::{
-    prelude::{
-        SlackCommandEvent, SlackEventCallbackBody, SlackInteractionEvent, SlackPushEvent,
-        SlackPushEventCallback,
-    },
-    ClientResult,
-};
-use slack_morphism_models::{SlackChannelId, SlackTs};
-use tokio::sync::RwLock;
+use serde_json::to_value;
+use slack_morphism::prelude::*;
 use tracing::{debug, error};
 
 pub async fn handle_slack_events_api(Json(payload): Json<SlackPushEvent>) -> impl IntoResponse {
