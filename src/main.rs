@@ -1,22 +1,16 @@
 mod slack;
 
 use axum::{
-    http::{Response, StatusCode},
     routing::{get, post},
     AddExtensionLayer, Router,
 };
-
-// use dotenv::dotenv;
 use slack::{handle_slack_commands_api, handle_slack_events_api, handle_slack_interaction_api};
-
-use serde_json::{from_value, json};
 use slack_morphism::{SlackApiToken, SlackClient, SlackClientSession};
 use slack_morphism_hyper::{
     SlackClientHyperConnector, SlackClientHyperHttpsConnector, SlackHyperClient,
 };
 use std::env;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use tower_http::trace::TraceLayer;
 
 #[tokio::main]

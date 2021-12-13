@@ -6,13 +6,13 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.3"
+axum = "0.4"
 tokio = { version = "1.0", features = ["full"] }
-slack-morphism="0.18"
-slack-morphism-models="0.18"
-slack-morphism-hyper="0.18"
+slack-morphism="0.19"
+slack-morphism-models="0.19"
+slack-morphism-hyper="0.19"
 serde = "1.0"
 serde_json = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version="0.3", features = ["env-filter"] }
-tower-http = {version = "0.1", features=["trace"]}
+tower-http = {version = "0.2", features=["trace"]}
