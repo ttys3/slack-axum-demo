@@ -6,13 +6,17 @@ use axum::{
     AddExtensionLayer, Router,
 };
 use slack::{handle_slack_commands_api, handle_slack_events_api, handle_slack_interaction_api};
+use slack_morphism::signature_verifier::SlackEventSignatureVerifier;
 use slack_morphism::{SlackApiToken, SlackClient, SlackClientSession};
 use slack_morphism_hyper::{
     SlackClientHyperConnector, SlackClientHyperHttpsConnector, SlackHyperClient,
 };
 use std::env;
 use std::sync::Arc;
+use tower::ServiceBuilder;
 use tower_http::trace::TraceLayer;
+
+use crate::verification::SlackRequestVerifier;
 
 #[tokio::main]
 async fn main() {
@@ -35,15 +39,16 @@ async fn main() {
     let slack_api_router = Router::new()
         .route("/events", post(handle_slack_events_api))
         .route("/interaction", post(handle_slack_interaction_api))
-        .route("/commands", post(handle_slack_commands_api));
-
-    // I think we need to add a layer ^ here for verifying slack requests using slack_morphism::SlackEventSignatureVerifier
-    // before the specific handler receives the request.
-    //
-    // SlackEventSignatureVerifier requires access to 2 specific headers AND the entire request body as a string.
-    // https://api.slack.com/authentication/verifying-requests-from-slack
-
-    // .layer(SlackVerification::new(SLACK_SIGNING_SECRET));
+        .route("/commands", post(handle_slack_commands_api))
+        .layer(ServiceBuilder::new().layer_fn(|inner| {
+            SlackRequestVerifier {
+                inner,
+                verifier: SlackEventSignatureVerifier::new(
+                    &env::var("SLACK_SIGNING_SECRET")
+                        .expect("Provide signing secret env var SLACK_SIGNING_SECRET"),
+                ),
+            }
+        }));
 
     let app = Router::new()
         .nest("/slack", slack_api_router)
